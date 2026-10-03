@@ -1,4 +1,4 @@
-import type { EntryRow } from './types'
+import type { EntryRow, InspectionDraft } from './types'
 
 // 示例数据：首次打开时播种，之后浏览器里的改动优先，重置才会回到这份。
 export const SEED_ROWS: Record<string, EntryRow[]> = {
@@ -709,45 +709,59 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
   "inspection": [
     {
       "id": 1,
-      "status": "待巡检",
-      "pending": true,
+      "status": "已巡检",
+      "pending": false,
       "abnormal": false,
-      "记录编号": "INSP-0001",
-      "站点编号": "INSP-0001",
+      "记录编号": "INSP-20260901",
+      "站点编号": "STAT-0001",
       "巡检日期": "2026-09-01",
-      "巡检人员": "巡检记录样例1",
-      "检查项目": "巡检记录样例1",
-      "发现问题": "巡检记录样例1",
-      "处理措施": "巡检记录样例1",
-      "巡检状态": "巡检记录样例1"
+      "巡检人员": "王立群",
+      "检查项目": "水位计、雨量筒、供电电池、站房门窗",
+      "发现问题": "各项检查正常，无异常",
+      "处理措施": "无需处理",
+      "巡检状态": "已巡检"
     },
     {
       "id": 2,
-      "status": "已巡检",
+      "status": "发现故障",
       "pending": true,
       "abnormal": true,
-      "记录编号": "INSP-0002",
-      "站点编号": "INSP-0002",
+      "记录编号": "INSP-20260902",
+      "站点编号": "STAT-0002",
       "巡检日期": "2026-09-02",
-      "巡检人员": "巡检记录样例2",
-      "检查项目": "巡检记录样例2",
-      "发现问题": "巡检记录样例2",
-      "处理措施": "巡检记录样例2",
-      "巡检状态": "巡检记录样例2"
+      "巡检人员": "李建国",
+      "检查项目": "遥测终端机、太阳能板、通讯天线",
+      "发现问题": "遥测终端通讯模块故障，数据无法上报",
+      "处理措施": "待通讯班更换通讯模块",
+      "巡检状态": "发现故障"
     },
     {
       "id": 3,
-      "status": "发现故障",
+      "status": "已处置",
       "pending": false,
       "abnormal": false,
-      "记录编号": "INSP-0003",
-      "站点编号": "INSP-0003",
+      "记录编号": "INSP-20260903",
+      "站点编号": "STAT-0003",
       "巡检日期": "2026-09-03",
-      "巡检人员": "巡检记录样例3",
-      "检查项目": "巡检记录样例3",
-      "发现问题": "巡检记录样例3",
-      "处理措施": "巡检记录样例3",
-      "巡检状态": "巡检记录样例3"
+      "巡检人员": "赵海涛",
+      "检查项目": "水位计、测流缆道、防雷接地",
+      "发现问题": "水位计探头被漂浮物缠绕，读数偏低",
+      "处理措施": "现场清理漂浮物并重新比测，读数恢复正常",
+      "巡检状态": "已处置"
+    },
+    {
+      "id": 4,
+      "status": "待巡检",
+      "pending": true,
+      "abnormal": false,
+      "记录编号": "INSP-20260905",
+      "站点编号": "STAT-0002",
+      "巡检日期": "2026-09-05",
+      "巡检人员": "待安排",
+      "检查项目": "水位计、雨量筒、遥测终端、站房环境",
+      "发现问题": "",
+      "处理措施": "",
+      "巡检状态": "待巡检"
     }
   ],
   "plan": [
@@ -795,3 +809,70 @@ export const SEED_ROWS: Record<string, EntryRow[]> = {
     }
   ],
 }
+
+// 巡检终端本地暂存示例：本地开发环境演示「现场保存 → 恢复网络回放」。
+// 涵盖空巡检、发现故障、已处置三类现场结果，以及旧暂存迁移、命中已确认结果、
+// 占用待巡检槽位等边界情况。
+export const SEED_INSPECTION_DRAFTS: InspectionDraft[] = [
+  {
+    draftId: 'draft-seed-1',
+    stationCode: 'STAT-0001',
+    inspectDate: '2026-09-28',
+    inspector: '王立群',
+    checkItems: '水位计、雨量筒、供电电池',
+    foundIssue: '',
+    handleMeasure: '',
+    result: 'empty',
+    // 没有 entryDate：模拟旧版本终端暂存，首次读取时按巡检日期迁移
+    entryDate: '',
+    synced: false,
+  },
+  {
+    draftId: 'draft-seed-2',
+    stationCode: 'STAT-0002',
+    inspectDate: '2026-09-29',
+    inspector: '李建国',
+    checkItems: '遥测终端机、通讯天线、太阳能板',
+    foundIssue: '通讯天线馈线老化开裂，信号时断时续',
+    handleMeasure: '',
+    result: 'fault',
+    entryDate: '2026-09-29 10:20',
+    synced: false,
+  },
+  {
+    draftId: 'draft-seed-3',
+    stationCode: 'STAT-0003',
+    inspectDate: '2026-09-30',
+    inspector: '赵海涛',
+    checkItems: '水位计、测流缆道、站房配电',
+    foundIssue: '站房配电箱空气开关跳闸一次',
+    handleMeasure: '已更换老化空开并试送电正常，持续观察',
+    result: 'handled',
+    entryDate: '2026-09-30 15:40',
+    synced: false,
+  },
+  {
+    draftId: 'draft-seed-4',
+    stationCode: 'STAT-0003',
+    inspectDate: '2026-09-03',
+    inspector: '赵海涛',
+    checkItems: '防雷接地复测',
+    foundIssue: '',
+    handleMeasure: '',
+    result: 'empty',
+    entryDate: '2026-10-01 09:05',
+    synced: false,
+  },
+  {
+    draftId: 'draft-seed-5',
+    stationCode: 'STAT-0002',
+    inspectDate: '2026-09-05',
+    inspector: '李建国',
+    checkItems: '水位计、雨量筒、遥测终端、站房环境',
+    foundIssue: '雨量筒漏斗堵塞，当日雨量采集为零',
+    handleMeasure: '',
+    result: 'fault',
+    entryDate: '2026-10-01 11:30',
+    synced: false,
+  },
+]

@@ -67,6 +67,41 @@
       <span>共 {{ total }} 条监测站点记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <h3 class="panel-title">巡检故障台账（读取巡检记录回放结果）</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>巡检记录编号</th>
+          <th>站点编号</th>
+          <th>巡检日期</th>
+          <th>巡检人员</th>
+          <th>故障描述</th>
+          <th>处理措施</th>
+          <th>站房维修待办</th>
+          <th>数据来源</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="fault in faultRows" :key="String(fault.id)">
+          <td>{{ fault.recordCode }}</td>
+          <td>{{ fault.stationCode }}</td>
+          <td>{{ fault.inspectDate }}</td>
+          <td>{{ fault.inspector }}</td>
+          <td>{{ fault.issue }}</td>
+          <td>{{ fault.measure || '待安排维修' }}</td>
+          <td>{{ fault.todoRecordCode ?? (fault.syncState === '待回放' ? '回放后自动生成' : '—') }}</td>
+          <td>
+            <span :class="fault.syncState === '待回放' ? 'badge pending' : 'badge'">
+              {{ fault.syncState === '待回放' ? '离线暂存·待回放' : fault.source }}
+            </span>
+          </td>
+        </tr>
+        <tr v-if="!faultRows.length">
+          <td colspan="8" class="empty-state">暂无巡检故障，巡检终端发现故障并回放后会在此显示</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 </template>
 
@@ -79,6 +114,7 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { inspectionFaultList } from '@/data/inspection-sync'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('station')
@@ -128,10 +164,14 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    // 巡检故障台账直接读取巡检模块回放后的同一批数据
+    faultRows.value = inspectionFaultList()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '监测站点列表读取失败'
   }
 }
+
+const faultRows = ref(inspectionFaultList())
 
 onMounted(reload)
 </script>

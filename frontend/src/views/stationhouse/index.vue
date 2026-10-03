@@ -67,6 +67,32 @@
       <span>共 {{ total }} 条站房维护记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <h3 class="section-title">巡检产生的站房维护待办（读回放后的巡检结果）</h3>
+    <p class="page-desc">与巡检台账、故障清单读取同一批数据：巡检发现故障即生成待办，现场处置完成后自动办结。</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>来源记录</th><th>站点编号</th><th>巡检日期</th><th>巡检人员</th>
+          <th>维护内容</th><th>处理措施</th><th>待办状态</th><th>数据来源</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="todo in todoRows" :key="`${String(todo.id)}-todo`">
+          <td>{{ todo['记录编号'] }}</td>
+          <td>{{ todo['站点编号'] }}</td>
+          <td>{{ todo['巡检日期'] }}</td>
+          <td>{{ todo['巡检人员'] }}</td>
+          <td>{{ todo['发现问题'] }}</td>
+          <td>{{ todo['处理措施'] || '待安排维护' }}</td>
+          <td>{{ todo.status === '发现故障' ? '待维护' : '已办结' }}</td>
+          <td>{{ todo['数据来源'] || '在线登记' }}</td>
+        </tr>
+        <tr v-if="!todoRows.length">
+          <td colspan="8" class="empty-state">暂无巡检维护待办，请在巡检记录模块完成离线回放</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 </template>
 
@@ -79,6 +105,7 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { inspectionView } from '@/data/inspection-sync'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('stationhouse')
@@ -88,6 +115,7 @@ const statuses = ["待安排", "已安排", "施工中", "已完成", "已验收
 const stats = [{"label": "待维护项数", "value": 0}, {"label": "施工中项数", "value": 0}, {"label": "本月已验收", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
+const todoRows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
@@ -128,6 +156,8 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    // 站房维护待办直接读巡检回放后的统一视图，与巡检台账、故障清单同源。
+    todoRows.value = inspectionView().maintenanceTodos
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '站房维护列表读取失败'
   }
@@ -135,3 +165,10 @@ function reload() {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.section-title {
+  font-size: 14px;
+  margin: 18px 0 8px;
+}
+</style>

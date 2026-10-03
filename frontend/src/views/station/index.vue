@@ -67,6 +67,32 @@
       <span>共 {{ total }} 条监测站点记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <h3 class="section-title">巡检故障台账（读取回放后的巡检结果）</h3>
+    <p class="page-desc">数据来自巡检终端离线补录回放后的统一视图：发现故障、已处置的巡检记录都会列在这里。</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>记录编号</th><th>站点编号</th><th>巡检日期</th><th>巡检人员</th>
+          <th>发现问题</th><th>处理措施</th><th>故障状态</th><th>数据来源</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="fault in faultRows" :key="String(fault.id)">
+          <td>{{ fault['记录编号'] }}</td>
+          <td>{{ fault['站点编号'] }}</td>
+          <td>{{ fault['巡检日期'] }}</td>
+          <td>{{ fault['巡检人员'] }}</td>
+          <td>{{ fault['发现问题'] || '—' }}</td>
+          <td>{{ fault['处理措施'] || '待处置' }}</td>
+          <td>{{ fault.status }}</td>
+          <td>{{ fault['数据来源'] || '在线登记' }}</td>
+        </tr>
+        <tr v-if="!faultRows.length">
+          <td colspan="8" class="empty-state">暂无巡检故障记录，请在巡检记录模块完成离线回放</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 </template>
 
@@ -79,6 +105,7 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { faultLedger } from '@/data/inspection-sync'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('station')
@@ -88,6 +115,7 @@ const statuses = ["正常运行", "设备故障", "汛期加强", "暂停运行"
 const stats = [{"label": "站点总数", "value": 0}, {"label": "正常运行数", "value": 0}, {"label": "故障站点数", "value": 0}]
 
 const rows = ref<EntryRow[]>([])
+const faultRows = ref<EntryRow[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
@@ -128,6 +156,8 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    // 别的模块的故障台账：读巡检离线补录回放后的统一结果，不另存一份。
+    faultRows.value = faultLedger()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '监测站点列表读取失败'
   }
@@ -135,3 +165,10 @@ function reload() {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.section-title {
+  font-size: 14px;
+  margin: 18px 0 8px;
+}
+</style>
